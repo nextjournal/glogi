@@ -1,55 +1,42 @@
-version: 2.1
+# Clojure CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-clojure/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: circleci/clojure:lein-2.7.1
 
-orbs:
-  kaocha: lambdaisland/kaocha@dev:first
-  clojure: lambdaisland/clojure@dev:first
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
 
-commands:
-  checkout_and_run:
-    parameters:
-      clojure_version:
-        type: string
+    working_directory: ~/repo
+
+    environment:
+      LEIN_ROOT: "true"
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+
     steps:
       - checkout
-      - clojure/with_cache:
-          cache_version: << parameters.clojure_version >>
-          steps:
-            - kaocha/execute:
-                args: "--reporter documentation --plugin cloverage --codecov"
-                clojure_version: << parameters.clojure_version >>
-      - kaocha/upload_codecov
 
-jobs:
-  java-11-clojure-1_10:
-    executor: clojure/openjdk11
-    steps: [{checkout_and_run: {clojure_version: "1.10.0-RC5"}}]
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
 
-  java-11-clojure-1_9:
-    executor: clojure/openjdk11
-    steps: [{checkout_and_run: {clojure_version: "1.9.0"}}]
+      - run: lein deps
 
-  java-9-clojure-1_10:
-    executor: clojure/openjdk9
-    steps: [{checkout_and_run: {clojure_version: "1.10.0-RC5"}}]
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "project.clj" }}
 
-  java-9-clojure-1_9:
-    executor: clojure/openjdk9
-    steps: [{checkout_and_run: {clojure_version: "1.9.0"}}]
-
-  java-8-clojure-1_10:
-    executor: clojure/openjdk8
-    steps: [{checkout_and_run: {clojure_version: "1.10.0-RC5"}}]
-
-  java-8-clojure-1_9:
-    executor: clojure/openjdk8
-    steps: [{checkout_and_run: {clojure_version: "1.9.0"}}]
-
-workflows:
-  kaocha_test:
-    jobs:
-      - java-11-clojure-1_10
-      - java-11-clojure-1_9
-      - java-9-clojure-1_10
-      - java-9-clojure-1_9
-      - java-8-clojure-1_10
-      - java-8-clojure-1_9
+      # run tests!
+      - run: lein test

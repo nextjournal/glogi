@@ -31,11 +31,14 @@
   "Get a logger by name, and optionally set its level. Name can be a string
   keyword, or symbol. The special keyword :glogi/root returns the root logger."
   (^Logger [n]
-   (glog/getLogger (name-str n) Level/INFO))
+   (glog/getLogger (name-str n)))
   (^Logger [n level]
    (glog/getLogger (name-str n) level)))
 
 (def ^Logger root-logger (logger ""))
+
+(comment
+  (logger ""))
 
 (def levels
   {:off     Level/OFF
